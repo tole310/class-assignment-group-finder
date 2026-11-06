@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Assignment Group Finder</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#172033;--muted:#65718a;--accent:#315ee7;--line:#e4e9f2;--odd:#fff3d9;--oddink:#8b5700;--even:#e5f1ff;--evenink:#1554a5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main{width:min(760px,calc(100% - 28px));margin:42px auto}
+header{text-align:center;margin-bottom:26px}header .mark{font-size:30px}h1{font-size:clamp(25px,5vw,36px);margin:5px 0}header p{color:var(--muted);margin:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 28px #23365b0b}
+label{display:block;font-weight:650;margin-bottom:8px} .searchrow{display:flex;gap:9px}
+input{flex:1;min-width:0;border:1px solid #cfd7e5;border-radius:11px;padding:13px 14px;font:inherit;outline:none}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #315ee71c}
+button{border:0;border-radius:11px;padding:12px 18px;background:var(--accent);color:white;font:600 15px inherit;cursor:pointer}
+button:hover{filter:brightness(.94)}.hint{font-size:13px;color:var(--muted);margin:9px 0 0}
+#result{margin-top:18px;display:none}.resultcard{border-radius:14px;padding:18px;border:1px solid var(--line);background:#fafbfe}
+.resulttop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.group{font-size:28px;font-weight:800;letter-spacing:-.5px}.tag{font-size:13px;font-weight:750;padding:7px 11px;border-radius:999px}
+.odd{background:var(--odd);color:var(--oddink)}.even{background:var(--even);color:var(--evenink)}
+.resultcard p{margin:8px 0 0;color:var(--muted)}.questions{font-weight:700;color:var(--ink)!important}
+.error{color:#b42318;background:#fff1f0;border:1px solid #ffd5d2;padding:12px;border-radius:10px}
+.meta{margin-top:24px;color:var(--muted);font-size:13px;text-align:center}
+details{margin-top:18px}summary{cursor:pointer;font-weight:650;padding:4px 0}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;margin-top:14px}
+.groupbox{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fff}
+.groupbox h3{margin:0 0 7px;font-size:15px}.groupbox ul{margin:0;padding-left:19px;color:var(--muted);font-size:14px}
+@media(max-width:520px){main{margin:24px auto}.panel{padding:17px}.searchrow{flex-direction:column}button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="mark">🎓</div>
+  <h1>Class Assignment Group Finder</h1>
+  <p>Enter your name to find your group and assigned questions.</p>
+</header>
+<section class="panel">
+  <label for="studentName">Your full name</label>
+  <div class="searchrow">
+    <input id="studentName" type="search" placeholder="e.g. Tolesa Badesa" autocomplete="name">
+    <button id="findBtn" type="button">Find my group</button>
+  </div>
+  <p class="hint">Use the name as it appears in the class group list.</p>
+  <div id="result" aria-live="polite"></div>
+  <details>
+    <summary>View all 11 groups</summary>
+    <div class="groups" id="groups"></div>
+  </details>
+</section>
+<p class="meta">11 groups · Odd groups solve odd-numbered questions · Even groups solve even-numbered questions</p>
+</main>
+<script>
+const groups = {
+  1: ["Semir Nesredin","Semir Seid","Selamawit Maru","Sibhat Mezgebe","Yididiya Eshetu","Tizita Demelash"],
+  2: ["Surafel Esayas","Samuel Shewangzaw","Temesgen W/Mariam","Yosef Fikru","Zelalem Masresha"],
+  3: ["Yonas Tesfaye","Yared Amdework","Sisay Siyum","Sualih Mohammedamin","Amanuel Samuel"],
+  4: ["Sosina Dejene","Tsion Melese","Yasmin Abedella","Tsedey Shimeles","Sarah Mokhtar"],
+  5: ["Ahmed Mohammed","Bethelem Minasie","Biruk Aklilu","Araya Brhan","Bezawit Girma"],
+  6: ["Yared Elias","Suhayib Ali","Peter Marial Dut","Majok Akol Majok","Surafeal Solomon"],
+  7: ["Yonas Abadi","Yisak Abaraham","Yared Giday","Yoseph Tizazu","Zeresenay Zinabu"],
+  8: ["Yerosen Berhanu","Yohannes Beshah","Yishak Yared","Saron Ayele","Semehar Kidanemariam"],
+  9: ["Tsadik G/mariam","Tolesa Badesa","Samuel Habtamu","Tesfaale Belay","Temesgen Tewodros"],
+  10: ["Yeabsira Asnakew","Shikurelah Dejen","Yeabsira Abdi","Sisay Wolde","Simon Amdeyesus"],
+  11: ["Yeabsira Million","Yeabsra Kefyalew","Yosabet Bizualew","Yosef Abera","Yoseph Zerihune"]
+};
+const normalize = s => s.toLocaleLowerCase().trim().replace(/\s+/g," ");
+const index = new Map();
+for (const [group, names] of Object.entries(groups)) {
+  for (const name of names) index.set(normalize(name), Number(group));
+}
+const input = document.getElementById("studentName");
+const result = document.getElementById("result");
+function findGroup(){
+  const name = normalize(input.value);
+  if(!name){result.style.display="block";result.innerHTML='<div class="error">Please enter your full name first.</div>';return;}
+  const group = index.get(name);
+  result.style.display="block";
+  if(!group){
+    result.innerHTML='<div class="error">Name not found. Check the spelling or view the group list below.</div>';
+    return;
+  }
+  const isOdd = group % 2 === 1;
+  const assigned = isOdd ? "ODD QUESTIONS" : "EVEN QUESTIONS";
+  const examples = isOdd ? "1, 3, 5, 7, 9, ..." : "2, 4, 6, 8, 10, ...";
+  result.innerHTML = `<div class="resultcard">
+    <div class="resulttop"><div class="group">GROUP ${group}</div><span class="tag ${isOdd?'odd':'even'}">${assigned}</span></div>
+    <p>Student: <strong>${groups[group].find(n=>normalize(n)===name)}</strong></p>
+    <p class="questions">Your assignment: Questions ${examples}</p>
+  </div>`;
+}
+document.getElementById("findBtn").addEventListener("click",findGroup);
+input.addEventListener("keydown",e=>{if(e.key==="Enter")findGroup();});
+document.getElementById("groups").innerHTML = Object.entries(groups).map(([g,names]) =>
+  `<section class="groupbox"><h3>Group ${g} · ${g%2?'Odd':'Even'} questions</h3><ul>${names.map(n=>`<li>${n}</li>`).join("")}</ul></section>`
+).join("");
+</script>
+</body>
+</html>
